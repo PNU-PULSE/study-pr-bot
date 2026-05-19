@@ -46,9 +46,9 @@ README.md
 
 | 변수 | 설명 | 기본값 |
 | --- | --- | --- |
-| `REPO_OWNER` | GitHub 저장소 owner | 없음 |
-| `REPO_NAME` | GitHub 저장소 이름 | 없음 |
-| `GITHUB_TOKEN` | GitHub API 토큰 | 없음 |
+| `REPO_OWNER` | 검사할 GitHub 저장소 owner 또는 organization | 없음 |
+| `REPO_NAME` | 검사할 GitHub 저장소 이름 | 없음 |
+| `GITHUB_TOKEN` | 검사할 저장소에 접근 가능한 GitHub API 토큰 | 없음 |
 | `DRY_RUN` | 실제 댓글/머지/Discord 전송 없이 로그만 출력 | `true` |
 | `DISCORD_ENABLED` | Discord webhook 전송 활성화 | `false` |
 | `DISCORD_WEBHOOK_URL` | Discord webhook URL | 빈 값 |
@@ -84,16 +84,21 @@ $env:DRY_RUN="true"
 - 매주 금요일 19:00 KST 실행
 - GitHub Actions cron 기준: `0 10 * * 5`
 - `workflow_dispatch`로 수동 실행 가능
-- 수동 실행 시 `dry_run` input 지원
+- 수동 실행 시 `dry_run`, `target_owner`, `target_repo` input 지원
 
-권한은 다음이 필요합니다.
+봇 레포와 검사할 레포가 달라도 됩니다. GitHub Actions에는 다음 값을 설정해야 합니다.
 
-```yaml
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-```
+| 종류 | 이름 | 설명 |
+| --- | --- | --- |
+| Repository 또는 Organization variable | `TARGET_REPO_OWNER` | 검사할 레포의 owner 또는 organization |
+| Repository 또는 Organization variable | `TARGET_REPO_NAME` | 검사할 레포 이름 |
+| Repository secret | `BOT_GITHUB_TOKEN` | 검사할 레포에 접근 가능한 토큰 |
+| Repository 또는 Organization variable | `DISCORD_ENABLED` | Discord 알림 사용 여부. 선택 |
+| Repository secret | `DISCORD_WEBHOOK_URL` | Discord webhook URL. 선택 |
+
+`BOT_GITHUB_TOKEN`은 검사할 레포에 대해 PR 조회, 이슈 댓글 작성, PR squash merge 권한이 있어야 합니다. 봇 레포와 검사할 레포가 다르면 기본 `secrets.GITHUB_TOKEN`으로는 부족하므로 fine-grained PAT 또는 GitHub App 토큰을 사용해야 합니다.
+
+수동 실행할 때 `target_owner`, `target_repo`를 입력하면 `TARGET_REPO_OWNER`, `TARGET_REPO_NAME` 변수보다 우선합니다.
 
 ## dry-run
 
