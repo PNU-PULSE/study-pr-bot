@@ -38,3 +38,15 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Local secrets / environment ###
+.env
+.env.*
+!.env.example
+*.local
+src/main/resources/application-local.yml
+src/main/resources/application-secret.yml
+
+### OS generated files ###
+.DS_Store
+Thumbs.db

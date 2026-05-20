@@ -10,6 +10,11 @@
 
 GitHub Actions에서 주기적으로 실행되는 Kotlin + Spring Boot 배치 앱입니다. 저장소의 open pull request를 조회한 뒤 PR 제목과 변경 파일 경로를 검사하고, 규칙을 만족하면 squash merge합니다. 규칙을 위반하면 PR에 실패 사유 댓글을 남깁니다.
 
+## TODO
+
+- 현재 코드는 AtCoder-Study 기준으로 만들어졌고, CodeForces-Study 기준에는 맞지 않으니 수정이 필요합니다.
+- 최다참여자 선정 기준을 정해야 하고, 그 결과를 표시할 방법도 마련해야 합니다.
+
 ## 기술 스택
 
 | 구분 | 사용 |
