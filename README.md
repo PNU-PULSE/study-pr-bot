@@ -1,6 +1,23 @@
 # AtCoder-CF-Study-PR-Bot
 
+![Language](https://img.shields.io/badge/Language-Kotlin%202.2.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white)
+![JDK](https://img.shields.io/badge/JDK-21-000000?style=flat-square&logo=openjdk&logoColor=white)
+![Framework](https://img.shields.io/badge/Framework-Spring%20Boot%204.0.6-6DB33F?style=flat-square&logo=springboot&logoColor=white)
+![Build](https://img.shields.io/badge/Build-Gradle%209.4.1-02303A?style=flat-square&logo=gradle&logoColor=white)
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
+![API](https://img.shields.io/badge/API-GitHub%20REST-181717?style=flat-square&logo=github&logoColor=white)
+![Webhook](https://img.shields.io/badge/API-Discord%20Webhook-5865F2?style=flat-square&logo=discord&logoColor=white)
+
 GitHub Actions에서 주기적으로 실행되는 Kotlin + Spring Boot 배치 앱입니다. 저장소의 open pull request를 조회한 뒤 PR 제목과 변경 파일 경로를 검사하고, 규칙을 만족하면 squash merge합니다. 규칙을 위반하면 PR에 실패 사유 댓글을 남깁니다.
+
+## 기술 스택
+
+| 구분 | 사용 |
+| --- | --- |
+| 언어 | ![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white) ![JDK](https://img.shields.io/badge/JDK-21-000000?style=flat-square&logo=openjdk&logoColor=white) |
+| 프레임워크 | ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-6DB33F?style=flat-square&logo=springboot&logoColor=white) |
+| 기술 스택 | ![Gradle](https://img.shields.io/badge/Gradle-9.4.1-02303A?style=flat-square&logo=gradle&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Scheduled%20Batch-2088FF?style=flat-square&logo=githubactions&logoColor=white) ![Spring Web RestClient](https://img.shields.io/badge/Spring%20Web-RestClient-6DB33F?style=flat-square&logo=spring&logoColor=white) |
+| 사용 API | ![GitHub REST API](https://img.shields.io/badge/GitHub%20REST%20API-PR%20%2F%20Issue%20Comment%20%2F%20Merge-181717?style=flat-square&logo=github&logoColor=white) ![Discord Webhook](https://img.shields.io/badge/Discord-Webhook-5865F2?style=flat-square&logo=discord&logoColor=white) |
 
 ## PR 제목 규칙
 
@@ -84,21 +101,59 @@ $env:DRY_RUN="true"
 - 매주 금요일 19:00 KST 실행
 - GitHub Actions cron 기준: `0 10 * * 5`
 - `workflow_dispatch`로 수동 실행 가능
-- 수동 실행 시 `dry_run`, `target_owner`, `target_repo` input 지원
+- 수동 실행 시 `dry_run`, `target_owner_1`, `target_repo_1`, `target_owner_2`, `target_repo_2` input 지원
 
-봇 레포와 검사할 레포가 달라도 됩니다. GitHub Actions에는 다음 값을 설정해야 합니다.
+봇 레포와 검사할 레포가 달라도 됩니다. 최대 2개 레포까지 순차적으로 검사할 수 있습니다.
+
+### 1. 검사 대상 레포 정하기
+
+봇 레포의 `Settings -> Secrets and variables -> Actions -> Variables`에 값을 추가합니다.
 
 | 종류 | 이름 | 설명 |
 | --- | --- | --- |
-| Repository 또는 Organization variable | `TARGET_REPO_OWNER` | 검사할 레포의 owner 또는 organization |
-| Repository 또는 Organization variable | `TARGET_REPO_NAME` | 검사할 레포 이름 |
-| Repository secret | `BOT_GITHUB_TOKEN` | 검사할 레포에 접근 가능한 토큰 |
+| Repository 또는 Organization variable | `TARGET_REPO_OWNER_1` | 첫 번째 검사 레포의 owner 또는 organization |
+| Repository 또는 Organization variable | `TARGET_REPO_NAME_1` | 첫 번째 검사 레포 이름 |
+| Repository 또는 Organization variable | `TARGET_REPO_OWNER_2` | 두 번째 검사 레포의 owner 또는 organization. 선택 |
+| Repository 또는 Organization variable | `TARGET_REPO_NAME_2` | 두 번째 검사 레포 이름. 선택 |
 | Repository 또는 Organization variable | `DISCORD_ENABLED` | Discord 알림 사용 여부. 선택 |
+
+레포를 하나만 검사하려면 `TARGET_REPO_OWNER_1`, `TARGET_REPO_NAME_1`만 설정하면 됩니다. 기존 `TARGET_REPO_OWNER`, `TARGET_REPO_NAME`도 첫 번째 레포 설정으로 사용할 수 있습니다.
+
+예를 들어 `pulse-club/algorithm-study`와 `pulse-club/coding-test-study`를 검사하려면 다음처럼 설정합니다.
+
+```text
+TARGET_REPO_OWNER_1=pulse-club
+TARGET_REPO_NAME_1=algorithm-study
+TARGET_REPO_OWNER_2=pulse-club
+TARGET_REPO_NAME_2=coding-test-study
+```
+
+### 2. 봇 토큰 등록하기
+
+봇 레포의 `Settings -> Secrets and variables -> Actions -> Secrets`에 값을 추가합니다.
+
+| 종류 | 이름 | 설명 |
+| --- | --- | --- |
+| Repository secret | `BOT_GITHUB_TOKEN` | 모든 검사 대상 레포에 접근 가능한 토큰 |
 | Repository secret | `DISCORD_WEBHOOK_URL` | Discord webhook URL. 선택 |
 
-`BOT_GITHUB_TOKEN`은 검사할 레포에 대해 PR 조회, 이슈 댓글 작성, PR squash merge 권한이 있어야 합니다. 봇 레포와 검사할 레포가 다르면 기본 `secrets.GITHUB_TOKEN`으로는 부족하므로 fine-grained PAT 또는 GitHub App 토큰을 사용해야 합니다.
+봇 레포와 검사할 레포가 다르면 기본 `secrets.GITHUB_TOKEN`으로는 부족합니다. `BOT_GITHUB_TOKEN`에는 fine-grained PAT 또는 GitHub App 토큰을 넣어야 합니다.
 
-수동 실행할 때 `target_owner`, `target_repo`를 입력하면 `TARGET_REPO_OWNER`, `TARGET_REPO_NAME` 변수보다 우선합니다.
+fine-grained PAT를 쓴다면 대상 레포 1개 또는 2개를 선택하고, Repository permissions를 다음처럼 줍니다.
+
+| 권한 | 필요 수준 | 이유 |
+| --- | --- | --- |
+| `Contents` | Read and write | 조건을 만족한 PR을 squash merge |
+| `Pull requests` | Read and write | 열린 PR과 변경 파일 조회 |
+| `Issues` | Read and write | 규칙 위반 PR에 댓글 작성 |
+
+### 3. 수동 실행으로 확인하기
+
+수동 실행할 때 `target_owner_1`, `target_repo_1`, `target_owner_2`, `target_repo_2`를 입력하면 Actions 변수보다 우선합니다.
+
+처음에는 `Actions -> PR Guardian Bot -> Run workflow`에서 `dry_run=true`로 실행해 로그만 확인합니다. 문제가 없으면 `dry_run=false`로 다시 실행합니다.
+
+스케줄 실행은 `dry_run=false`로 동작합니다. 실제 댓글 작성, squash merge, Discord 전송이 수행될 수 있으므로 토큰과 대상 레포를 먼저 확인해야 합니다.
 
 ## dry-run
 

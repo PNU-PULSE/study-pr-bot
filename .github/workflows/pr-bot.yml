@@ -9,11 +9,17 @@ on:
         description: "Run without comments/merge/discord"
         required: false
         default: "true"
-      target_owner:
-        description: "Target repository owner. Defaults to vars.TARGET_REPO_OWNER"
+      target_owner_1:
+        description: "First target repository owner. Defaults to vars.TARGET_REPO_OWNER_1"
         required: false
-      target_repo:
-        description: "Target repository name. Defaults to vars.TARGET_REPO_NAME"
+      target_repo_1:
+        description: "First target repository name. Defaults to vars.TARGET_REPO_NAME_1"
+        required: false
+      target_owner_2:
+        description: "Second target repository owner. Defaults to vars.TARGET_REPO_OWNER_2"
+        required: false
+      target_repo_2:
+        description: "Second target repository name. Defaults to vars.TARGET_REPO_NAME_2"
         required: false
 
 jobs:
@@ -31,28 +37,49 @@ jobs:
           java-version: "21"
       - run: chmod +x ./gradlew
       - run: ./gradlew build
-      - name: Validate target repository settings
+      - name: Run PR bot
+        shell: bash
         run: |
-          if [[ -z "$REPO_OWNER" || -z "$REPO_NAME" ]]; then
-            echo "::error::Set TARGET_REPO_OWNER and TARGET_REPO_NAME repository/organization variables, or provide workflow_dispatch inputs."
-            exit 1
-          fi
-
           if [[ -z "$GITHUB_TOKEN" ]]; then
             echo "::error::Set BOT_GITHUB_TOKEN secret with permissions to the target repository."
             exit 1
           fi
 
-          echo "Target repository: ${REPO_OWNER}/${REPO_NAME}"
+          target_count=0
+
+          run_bot() {
+            local index="$1"
+            local owner="$2"
+            local repo="$3"
+
+            if [[ -z "$owner" && -z "$repo" ]]; then
+              echo "Target repository #${index}: not configured, skipping."
+              return
+            fi
+
+            if [[ -z "$owner" || -z "$repo" ]]; then
+              echo "::error::Both owner and repo must be set for target repository #${index}."
+              exit 1
+            fi
+
+            target_count=$((target_count + 1))
+            echo "Target repository #${index}: ${owner}/${repo}"
+            REPO_OWNER="$owner" REPO_NAME="$repo" ./gradlew bootRun
+          }
+
+          run_bot 1 "$TARGET_REPO_OWNER_1" "$TARGET_REPO_NAME_1"
+          run_bot 2 "$TARGET_REPO_OWNER_2" "$TARGET_REPO_NAME_2"
+
+          if [[ "$target_count" -eq 0 ]]; then
+            echo "::error::Set at least one target repository with TARGET_REPO_OWNER_1/TARGET_REPO_NAME_1, TARGET_REPO_OWNER_2/TARGET_REPO_NAME_2, or workflow_dispatch inputs."
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
-          REPO_OWNER: ${{ github.event.inputs.target_owner || vars.TARGET_REPO_OWNER }}
-          REPO_NAME: ${{ github.event.inputs.target_repo || vars.TARGET_REPO_NAME }}
-      - run: ./gradlew bootRun
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
-          REPO_OWNER: ${{ github.event.inputs.target_owner || vars.TARGET_REPO_OWNER }}
-          REPO_NAME: ${{ github.event.inputs.target_repo || vars.TARGET_REPO_NAME }}
+          TARGET_REPO_OWNER_1: ${{ github.event.inputs.target_owner_1 || vars.TARGET_REPO_OWNER_1 || vars.TARGET_REPO_OWNER }}
+          TARGET_REPO_NAME_1: ${{ github.event.inputs.target_repo_1 || vars.TARGET_REPO_NAME_1 || vars.TARGET_REPO_NAME }}
+          TARGET_REPO_OWNER_2: ${{ github.event.inputs.target_owner_2 || vars.TARGET_REPO_OWNER_2 }}
+          TARGET_REPO_NAME_2: ${{ github.event.inputs.target_repo_2 || vars.TARGET_REPO_NAME_2 }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           DISCORD_ENABLED: ${{ vars.DISCORD_ENABLED || 'false' }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
